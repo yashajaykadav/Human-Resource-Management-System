@@ -1,0 +1,109 @@
+services:
+  postgres:
+    image: apryde-hrms-postgres:pg16
+    container_name: apryde-hrms-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-hrms_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-hrms_secure_password}
+      POSTGRES_DB: ${POSTGRES_DB:-hrms_db}
+    ports:
+      - "${POSTGRES_EXTERNAL_PORT:-5433}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-hrms_user} -d ${POSTGRES_DB:-hrms_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - hrms-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: apryde-hrms-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_EXTERNAL_PORT:-6380}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - hrms-net
+
+  backend:
+    image: apryde-ai-hrms-backend:latest
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: apryde-hrms-backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_HOST=postgres
+      - REDIS_HOST=redis
+    ports:
+      - "${BACKEND_PORT:-8001}:8000"
+    # volumes:
+    #   - ./backend:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: >
+      sh -c "python -m app.initial_setup &&
+             uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+    networks:
+      - hrms-net
+
+  frontend:
+    image: apryde-ai-hrms-frontend:latest
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: apryde-hrms-frontend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - INTERNAL_API_URL=http://backend:8000
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8001}
+    ports:
+      - "${FRONTEND_PORT:-3001}:3000"
+    # volumes:
+    #   - ./frontend:/app
+    #   - frontend_node_modules:/app/node_modules
+    #   - frontend_next:/app/.next
+    depends_on:
+      - backend
+    networks:
+      - hrms-net
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: apryde-hrms-ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    profiles:
+      - ollama
+    networks:
+      - hrms-net
+
+volumes:
+  postgres_data:
+  frontend_node_modules:
+  frontend_next:
+  ollama_data:
+
+networks:
+  hrms-net:
+    driver: bridge

@@ -36,9 +36,9 @@ docker compose up --build -d
 ```
 
 ### 2. Access the Application
-- **Frontend Dashboard**: [http://localhost:3000](http://localhost:3000)
-- **Interactive API Documentation (Swagger)**: [http://localhost:8000/api/v1/docs](http://localhost:8000/api/v1/docs)
-- **Alternative ReDoc**: [http://localhost:8000/api/v1/redoc](http://localhost:8000/api/v1/redoc)
+- **Frontend Dashboard**: [http://localhost:3001](http://localhost:3001) (configurable via `FRONTEND_PORT` in `.env`)
+- **Interactive API Documentation (Swagger)**: [http://localhost:8001/api/v1/docs](http://localhost:8001/api/v1/docs) (configurable via `BACKEND_PORT` in `.env`)
+- **Alternative ReDoc**: [http://localhost:8001/api/v1/redoc](http://localhost:8001/api/v1/redoc)
 
 ---
 

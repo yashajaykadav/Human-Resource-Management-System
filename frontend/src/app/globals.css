@@ -1,0 +1,258 @@
+@import "tailwindcss";
+@config "../../tailwind.config.ts";
+
+/* ==============================================================
+   Modern Skeuomorphic & Tactile Soft UI Design Tokens
+   ============================================================== */
+
+:root {
+  /* Light Mode Palette */
+  --bg-canvas: #e8ecf2;
+  --bg-surface: #edf1f6;
+  --bg-surface-elevated: #f4f7fa;
+  --border-soft: rgba(255, 255, 255, 0.75);
+  --border-subtle: rgba(180, 190, 205, 0.4);
+
+  --text-primary: #151d28;
+  --text-secondary: #576579;
+  --text-muted: #8493a8;
+
+  /* Tactile Multi-layer Shadows (Light Mode) */
+  --shadow-light-high: #ffffff;
+  --shadow-dark-low: #c7ced8;
+  --shadow-ambient: 0 4px 12px -2px rgba(160, 175, 195, 0.35);
+
+  --skeuo-card-shadow: 
+    -7px -7px 18px var(--shadow-light-high),
+     7px  7px 18px var(--shadow-dark-low),
+     inset 0 1px 0.5px rgba(255, 255, 255, 0.9);
+
+  --skeuo-card-soft:
+    -4px -4px 10px rgba(255, 255, 255, 0.8),
+     4px  4px 12px rgba(195, 204, 216, 0.7),
+     inset 0 1px 0 rgba(255, 255, 255, 0.9);
+
+  --skeuo-inset-shadow:
+    inset  3px  3px 7px #c7ced8,
+    inset -3px -3px 7px #ffffff;
+
+  --skeuo-btn-shadow:
+    -3px -3px 8px var(--shadow-light-high),
+     3px  3px 8px var(--shadow-dark-low),
+     inset 0 1px 0 rgba(255, 255, 255, 0.95),
+     inset 0 -1px 0 rgba(0, 0, 0, 0.04);
+
+  --skeuo-btn-active:
+    inset  2px  2px 5px #b8c1cd,
+    inset -2px -2px 5px #ffffff;
+}
+
+.dark, [data-theme="dark"] {
+  /* Dark Mode Palette */
+  --bg-canvas: #0e1217;
+  --bg-surface: #151a21;
+  --bg-surface-elevated: #1b212a;
+  --border-soft: rgba(255, 255, 255, 0.08);
+  --border-subtle: rgba(0, 0, 0, 0.5);
+
+  --text-primary: #f0f4f9;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+
+  /* Tactile Multi-layer Shadows (Dark Mode) */
+  --shadow-light-high: #1c232d;
+  --shadow-dark-low: #07090c;
+  --shadow-ambient: 0 4px 16px -2px rgba(0, 0, 0, 0.6);
+
+  --skeuo-card-shadow: 
+    -6px -6px 16px var(--shadow-light-high),
+     6px  6px 16px var(--shadow-dark-low),
+     inset 0 1px 0.5px rgba(255, 255, 255, 0.08);
+
+  --skeuo-card-soft:
+    -4px -4px 10px rgba(32, 40, 52, 0.5),
+     4px  4px 12px rgba(5, 7, 10, 0.7),
+     inset 0 1px 0 rgba(255, 255, 255, 0.06);
+
+  --skeuo-inset-shadow:
+    inset  3px  3px 6px #080a0d,
+    inset -3px -3px 6px #1e2632;
+
+  --skeuo-btn-shadow:
+    -3px -3px 7px var(--shadow-light-high),
+     3px  3px 7px var(--shadow-dark-low),
+     inset 0 1px 0.5px rgba(255, 255, 255, 0.12),
+     inset 0 -1px 0 rgba(0, 0, 0, 0.3);
+
+  --skeuo-btn-active:
+    inset  2px  2px 4px #07090c,
+    inset -2px -2px 4px #1b222c;
+}
+
+body {
+  background-color: var(--bg-canvas);
+  color: var(--text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  transition: background-color 0.25s ease, color 0.25s ease;
+  overflow-x: hidden;
+}
+
+/* ==============================================================
+   Modern Skeuomorphic Utility Classes
+   ============================================================== */
+
+/* Tactile Extruded Card */
+.skeuo-card {
+  background-color: var(--bg-surface);
+  box-shadow: var(--skeuo-card-shadow);
+  border: 1px solid var(--border-soft);
+  border-radius: 1.25rem;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.skeuo-card-soft {
+  background-color: var(--bg-surface);
+  box-shadow: var(--skeuo-card-soft);
+  border: 1px solid var(--border-soft);
+  border-radius: 1rem;
+}
+
+/* Debossed Sunken Input / Track Well */
+.skeuo-inset {
+  background-color: var(--bg-canvas);
+  box-shadow: var(--skeuo-inset-shadow);
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.85rem;
+}
+
+/* Tactile Button with Physical Depth */
+.skeuo-btn {
+  background: linear-gradient(180deg, var(--bg-surface-elevated) 0%, var(--bg-surface) 100%);
+  color: var(--text-primary);
+  box-shadow: var(--skeuo-btn-shadow);
+  border: 1px solid var(--border-soft);
+  border-radius: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  transition: all 0.12s ease-in-out;
+  user-select: none;
+}
+
+.skeuo-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.02);
+}
+
+.skeuo-btn:active {
+  transform: translateY(1px) scale(0.985);
+  box-shadow: var(--skeuo-btn-active);
+  background: var(--bg-surface);
+}
+
+/* Primary Brushed Slate Button */
+.skeuo-btn-primary {
+  background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 
+    0 4px 10px -2px rgba(37, 99, 235, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.15);
+  border-radius: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1.15rem;
+  transition: all 0.12s ease-in-out;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+}
+
+.skeuo-btn-primary:hover {
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+}
+
+.skeuo-btn-primary:active {
+  transform: translateY(1px) scale(0.985);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.35);
+  background: #1d4ed8;
+}
+
+/* Success Tactile Button */
+.skeuo-btn-success {
+  background: linear-gradient(180deg, #10b981 0%, #059669 100%);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 
+    0 4px 10px -2px rgba(16, 185, 129, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  border-radius: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.12s ease-in-out;
+}
+
+.skeuo-btn-success:active {
+  transform: translateY(1px) scale(0.985);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.35);
+}
+
+/* Danger Tactile Button */
+.skeuo-btn-danger {
+  background: linear-gradient(180deg, #ef4444 0%, #dc2626 100%);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 
+    0 4px 10px -2px rgba(220, 38, 38, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  border-radius: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.12s ease-in-out;
+}
+
+.skeuo-btn-danger:active {
+  transform: translateY(1px) scale(0.985);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.35);
+}
+
+/* Tactile Pill Badges */
+.skeuo-pill {
+  border-radius: 9999px;
+  box-shadow: 
+    -2px -2px 5px var(--shadow-light-high),
+     2px  2px 5px var(--shadow-dark-low),
+     inset 0 1px 0.5px rgba(255, 255, 255, 0.5);
+  border: 1px solid var(--border-soft);
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+/* Custom Scrollbar for Smooth Tactile Feel */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-canvas);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--shadow-dark-low);
+  border-radius: 9999px;
+  border: 2px solid var(--bg-canvas);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
