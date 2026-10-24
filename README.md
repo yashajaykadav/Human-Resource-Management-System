@@ -1,179 +1,290 @@
-# Apryde AI HRMS
-
 <div align="center">
 
-![Apryde AI HRMS Banner](https://img.shields.io/badge/Enterprise-HRMS-indigo?style=for-the-badge)
-![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-009688?style=for-the-badge&logo=fastapi&logoColor=white)
-![Next.js](https://img.shields.io/badge/Next.js-15-black?style=for-the-badge&logo=next.js&logoColor=white)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16%20+%20pgvector-336791?style=for-the-badge&logo=postgresql&logoColor=white)
-![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+# 🏛️ Apryde AI HRMS
+### Enterprise Human Resource Intelligence & Autonomous Workforce Operations
 
-**An enterprise-grade Human Resource Management System powered by Dynamic Database RBAC, Autonomous Role-Based AI Copilots, and Tactile Skeuomorphic UI.**
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-009688.svg?style=flat-square&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![Next.js](https://img.shields.io/badge/Next.js-15%20(App%20Router)-black.svg?style=flat-square&logo=next.js&logoColor=white)](https://nextjs.org/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16%20+%20pgvector-336791.svg?style=flat-square&logo=postgresql&logoColor=white)](https://github.com/pgvector/pgvector)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind-v4%20Tactile%20Skeuomorphic-38B2AC.svg?style=flat-square&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
+[![Docker](https://img.shields.io/badge/Docker-Orchestrated-2496ED.svg?style=flat-square&logo=docker&logoColor=white)](https://www.docker.com/)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](LICENSE)
 
-[Features](#-key-features) • [Quick Start](#-quick-start) • [Architecture](#-architecture--tech-stack) • [Seeded Accounts](#-demo-accounts) • [API Docs](#-api-documentation)
+<p align="center">
+  A production-ready, full-stack Human Resource Management System engineered with dynamic database-level RBAC, two-tier approval state machines, automated shift roster calculations, an autonomous RAG policy assistant, and an intentional tactile skeuomorphic interface.
+</p>
 
 </div>
 
 ---
 
-## 🌟 Key Features
+## 📌 Engineering Overview
 
-### 1. Dynamic Role-Based Access Control (RBAC)
-- **100% Database-Driven Roles**: Zero hardcoded roles in Python or frontend. All roles, titles, and permission arrays (`dashboard`, `employees`, `attendance`, `leaves`, `payroll`, `recruitment`, `policies`, `organization`, `assets`) are defined and managed dynamically in PostgreSQL.
-- **Granular Permissions & Guardrails**: System roles (Admin, HR Admin, Team Manager, ESS, Recruiter, Payroll) and custom organization-created roles with real-time UI guardrails.
+Most modern open-source HRMS platforms fall into one of two traps: they are either legacy monoliths with rigid relational schemas, or superficial dashboards lacking atomic approval chains, auditable shift models, and genuine access control.
+
+**Apryde AI HRMS** was engineered from the ground up to solve these fundamental operational problems:
+
+1. **Strict Separation of Concerns**: Complete architectural split between Organizational Structure, Shift & Roster Planning, and Leave & Holiday Policies.
+2. **Dynamic Database RBAC**: Decoupled from static code enums. Roles, hierarchy assignments, and granular JSON permission arrays (`permissions: ["*"]`, `["dashboard", "leaves", ...]`) are queried and enforced dynamically at runtime.
+3. **State Machine Leave Approval**: Deterministic two-stage approval pipeline (`Reporting Line Manager` ➔ `HR Admin`) with zero self-approval privileges.
+4. **Shift & Net Productive Hours Engine**: Automatically calculates actual working hours by subtracting configurable unpaid breaks, factoring in late-arrival grace buffers, half-day thresholds, and absenteeism boundaries.
+5. **Human-in-the-Loop (HITL) AI Agent**: An autonomous assistant grounded on organization policy handbooks using `pgvector` semantic retrieval. High-stakes mutations (such as leave applications or approvals) generate visual confirmation cards before state commits.
+6. **Tactile Soft UI Design Language**: A departure from flat, lifeless interfaces. Apryde uses physical depth tokens (`skeuo-card`, `skeuo-inset`, `skeuo-btn`, `skeuo-pill`) with smooth micro-interactions and dark/light mode balance.
+
+---
+
+## 🏛️ System Architecture
+
+```mermaid
+flowchart TD
+    subgraph Client ["Client Tier (Next.js 15)"]
+        UI["Tactile Skeuomorphic UI\n(App Router / Server & Client Components)"]
+        CTX["Context Providers\n(AuthContext, SidebarContext, ThemeContext, NotificationContext)"]
+        UI --> CTX
+    end
+
+    subgraph Gateway ["Reverse Proxy / Gateway"]
+        CORS["FastAPI CORSMiddleware\n(Origin Regex & Preflight Matcher)"]
+    end
+
+    subgraph Backend ["Application Tier (FastAPI Async)"]
+        ROUTER["API Router Layer (/api/v1)"]
+        RBAC["Dynamic RBAC Engine\n(deps.py / Permission Checkers)"]
+        ORCH["AI Agent Orchestrator\n(Gemini 2.0 / Local Ollama)"]
+        
+        ROUTER --> RBAC
+        ROUTER --> ORCH
+    end
+
+    subgraph DataTier ["Persistence Tier (Docker Network)"]
+        PG[("PostgreSQL 16\nRelational Schemas + pgvector")]
+        REDIS[("Redis 7 Alpine\nTask Queues & State Cache")]
+    end
+
+    CTX -->|HTTP / JSON via api.ts| CORS
+    CORS --> ROUTER
+    RBAC -->|SQLAlchemy 2.0 Async / asyncpg| PG
+    ORCH -->|Cosine Similarity Queries| PG
+    ROUTER -->|Pub/Sub & Counters| REDIS
+```
+
+---
+
+## ⚡ Core Functional Modules
+
+### 1. Dynamic RBAC & Guardrail Engine
+- **No Hardcoded Roles**: Traditional HRMS systems use static Python/TypeScript enums that require code deploys for every organizational change. Apryde stores roles directly in the `roles` table.
+- **Granular Permission Arrays**: Every role carries a dynamic JSON array of permissions (`["dashboard", "employees", "attendance", "leaves", "payroll", "recruitment", "policies", "organization", "assets"]` or wildcard `["*"]`).
+- **Runtime Enforcer**: Both API endpoints ([`backend/app/api/deps.py`](backend/app/api/deps.py)) and UI navigation guards ([`frontend/src/components/Sidebar.tsx`](frontend/src/components/Sidebar.tsx)) evaluate access in real time based on active database permissions.
 
 ### 2. Shift Master & Individual Employee Rostering
-- **Shift Master Portal**: Define multi-shift schedules with presets for **General** (09:00 - 18:00), **Morning** (06:00 - 14:30), **Night** (22:00 - 06:30), and **Weekend** shifts.
-- **Break Deduction Engine**: Configurable unpaid break duration (e.g. 60 min) auto-deducted to compute and display live **Net Productive Hours**.
-- **Flexibility & Grace Periods**:
-  - **Grace Arrival Window**: Permissible late-arrival minutes before flagging late attendance.
-  - **Half-Day Threshold**: Minimum working hours for half-day credit (e.g., `< 4.0h` = Half Day).
-  - **Absenteeism Threshold**: Minimum working hours for full-day presence (e.g., `< 2.0h` = Absent).
-- **Individual Employee Rostering**: Directly assign specific shifts and date windows to individual employees with real-time scheduling preview.
+- **Shift Master**:
+  - Pre-calibrated shifts: **General** (`09:00 - 18:00`), **Morning** (`06:00 - 14:30`), **Night** (`22:00 - 06:30`), and custom weekend shifts.
+  - **Net Productive Calculation**: Unpaid break durations (e.g., 60 min) are deducted from gross duration to calculate actual productivity:
+    $$\text{Net Hours} = \text{Gross Working Duration} - \text{Unpaid Break}$$
+  - **Flexibility & Grace Windows**:
+    - **Grace Time**: Allowed late-arrival window (e.g., 15 minutes) before marking attendance as late.
+    - **Half-Day Threshold**: Minimum hours required to be credited for half a day (e.g., $< 4.0\text{h} \rightarrow \text{Half Day}$).
+    - **Absenteeism Threshold**: Floor hours required for a day's presence (e.g., $< 2.0\text{h} \rightarrow \text{Absent}$).
+- **Individual Employee Rostering**: Direct employee-to-shift assignment with date validity bounds, shift notes, and conflict-free calendar mapping.
 
-### 3. Multi-Stage Leave & Holiday Management
-- **Two-Stage Approval Workflow**: Leave requests require sequential approval:
-  1. **Stage 1**: Direct Line Manager review and approval.
-  2. **Stage 2**: HR Admin final sign-off.
-- **Anti-Self-Approval Enforcement**: Strictly prevents self-approval across all leadership and HR tiers.
-- **Dedicated Portals**: Complete physical separation between Shift/Roster management and Annual Leave Quotas / Corporate Holiday Calendars.
+### 3. Two-Tier Leave Workflow & Anti-Self-Approval
+- **Two-Stage Sequential Pipeline**:
+  ```
+  [Employee Submits] ➔ [Stage 1: Reporting Manager] ➔ [Stage 2: HR Admin] ➔ [Leave Approved]
+                                     ↓                              ↓
+                              [Rejected]                    [Rejected]
+  ```
+- **Anti-Self-Approval Rule**: A manager or HR administrator cannot approve their own leave request. Self-requests are excluded from review queues and must be escalated to their respective reporting authority.
+- **Quota & Balance Cards**: Real-time tracking of Allocated, Used, and Pending balances with instant carry-forward policy calculations.
 
-### 4. Organization Setup & Hierarchy Tree
-- **Company Profile**: Legal entity naming, registration numbers, tax IDs, and corporate addresses.
-- **Structure**: Multi-department and team management with department linkages.
-- **Interactive Hierarchy Tree**: Visual employee organizational hierarchy showing direct reports, managers, and executive tiers.
-- **Designations & Dynamic Roles**: Real-time management of job titles, pay bands, and permission templates.
+### 4. Organization Structure & Tree Hierarchy
+- **Company Profile**: Master corporate records (legal name, registration, tax identifiers, corporate headquarters).
+- **Department & Team Topology**: Nested organization structure linking departments to specialized functional teams.
+- **Visual Employee Tree**: An interactive, SVG-rendered reporting tree that visually illustrates the entire reporting hierarchy from executive leadership down to individual contributors.
 
 ### 5. Multi-Role Specialized Dashboards
-- **Employee Self-Service (ESS)**: Clock-in/out terminal, daily time-tracker, leave balance cards, payslip downloads, and quick policy queries.
-- **Team Manager Hub**: Live team attendance radar (who is in/late/absent), pending team leave approvals, and shift rosters.
-- **HR Workforce Operations**: Company headcount metrics, attrition rates, employee directory, and onboarding pipelines.
-- **Recruitment & ATS**: Requisitions, Kanban applicant pipeline, candidate resume parsing, and semantic match scoring.
-- **Payroll & Finance**: Monthly payroll runs, salary components, deductions, tax withholdings, and disbursement reports.
-- **Super Admin Infrastructure**: Live PostgreSQL + pgvector status, Redis task queues, container metrics, and runtime LLM provider switching.
+Every authenticated role is routed to an optimized command center:
+- **Employee Self-Service (ESS)**: Clock-in/out terminal, live timer, personal balances, payslips, and personal requests.
+- **Team Manager Hub**: Direct report attendance radar, shift schedules, and pending team leave approvals.
+- **HR Workforce Operations**: Headcount metrics, attrition rates, employee directory, and policy vault operations.
+- **Recruitment & ATS**: Job requisition pipeline, candidate Kanban board, and semantic resume matching.
+- **Payroll & Finance**: Monthly payroll runs, deductions, tax withholding, and salary disbursement records.
+- **Super Admin Infrastructure**: Live Postgres container health, Redis task queues, and runtime LLM provider switching.
 
-### 6. Autonomous AI Copilot & Policy Vault (RAG)
-- **Role-Aware HR Agent**: Slide-out copilot drawer offering context-aware assistance tailored to the authenticated user's role.
-- **Interactive Human-in-the-Loop (HITL) Cards**: High-stakes actions (leave submissions, approvals, payroll runs) require explicit visual confirmation before execution.
-- **Semantic Policy RAG**: Natural language retrieval over company handbooks and HR policies using `pgvector` embeddings.
-- **Dual LLM Provider**: Runtime hot-switching between **Google Gemini** (`gemini-2.0-flash` / `gemini-1.5-pro`) and **Local Ollama** (`llama3.2:1b` / `llama3.1:8b`).
-
-### 7. Modern Skeuomorphic & Tactile Soft UI
-- Custom CSS design system with tactile depth tokens (`skeuo-card`, `skeuo-btn`, `skeuo-inset`, `skeuo-pill`).
-- Instant **Light & Dark mode** toggle with high-contrast ambient glows.
-- Fully responsive sidebar with global state synchronization (`SidebarContext`), navbar collapse toggle (`PanelLeftClose`/`PanelLeft`), and mobile slide-out drawer with dedicated close buttons.
-- Real-time notification dropdown with priority color coding and 1-click dismissals.
+### 6. Tactile Skeuomorphic UI & Theme Engine
+- Custom design tokens built with CSS custom properties:
+  - `.skeuo-card`: Multi-layer shadow elevation with subtle inset border highlights.
+  - `.skeuo-inset`: Debossed sunken wells for inputs, search bars, and active navigation pills.
+  - `.skeuo-btn`: Tactile clickable buttons with micro-press animations (`active:scale-98`).
+  - `.skeuo-pill`: Compact physical status badges.
+- **Hydration-Safe Theme Switching**: Light and Dark mode with ambient glows and high-contrast color choices.
+- **Responsive Navigation**: Synchronized sidebar via `SidebarContext`, accessible via a desktop navbar collapse toggle (`PanelLeftClose` / `PanelLeft`) and a mobile drawer with dedicated close actions.
 
 ---
 
-## 🏗️ Architecture & Tech Stack
+## 🧰 Technology Stack
 
-```
-apryde-ai-hrms/
-├── frontend/                # Next.js 15 (App Router, React 19, Tailwind CSS)
-│   ├── src/app/             # Route pages (dashboard, organization, leaves, etc.)
-│   ├── src/components/      # UI components, role dashboards, navigation
-│   └── src/context/         # Auth, Notification, Sidebar, and Theme contexts
-├── backend/                 # FastAPI (Python 3.11, Async SQLAlchemy 2.0)
-│   ├── app/api/v1/          # Modular API endpoints (shifts, leaves, roles, etc.)
-│   ├── app/models/          # SQLAlchemy ORM models (RBAC, attendance, leaves)
-│   ├── app/schemas/         # Pydantic v2 validation schemas
-│   ├── app/agents/          # Autonomous AI Orchestrator & Tool Registry
-│   └── app/core/            # Config, security, async engine, database pool
-├── docker/                  # Dockerfiles & PostgreSQL pgvector initialization
-└── docker-compose.yml       # Production multi-service orchestration
-```
-
-| Component | Technology | Description |
-| :--- | :--- | :--- |
-| **Frontend** | Next.js 15, React 19, TypeScript | Tactile Skeuomorphic UI, Server/Client components |
-| **Styling** | Tailwind CSS v4, Lucide React | Modern Soft UI design tokens, dark/light themes |
-| **Backend API**| FastAPI, Pydantic v2, Python 3.11 | High-performance asynchronous REST API |
-| **Database** | PostgreSQL 16 + `pgvector` | Relational tables + Vector embeddings for RAG |
-| **Cache & Queue**| Redis 7 Alpine | Session caching and background worker queue |
-| **AI Models** | Google Gemini & Local Ollama | Dual-engine role-based agent orchestrator |
+| Layer | Technology | Version | Purpose |
+| :--- | :--- | :--- | :--- |
+| **Frontend Framework** | [Next.js](https://nextjs.org/) | 15.x (App Router) | React Server & Client Components, Turbopack |
+| **Client Core** | [React](https://react.dev/) | 19.x | Component lifecycle & responsive state management |
+| **Styling** | [Tailwind CSS](https://tailwindcss.com/) | 4.x | Tactile skeuomorphic utility classes & tokens |
+| **Icons** | [Lucide React](https://lucide.dev/) | Latest | Modern, clean vector iconography |
+| **Backend Framework** | [FastAPI](https://fastapi.tiangolo.com/) | 0.110+ | Asynchronous RESTful API with automated OpenAPI docs |
+| **Runtime / Language** | [Python](https://www.python.org/) | 3.11 | Modern typing, asyncio, and pattern matching |
+| **ORM / Data Access** | [SQLAlchemy](https://www.sqlalchemy.org/) | 2.0 (Async) | Non-blocking async ORM queries with `asyncpg` driver |
+| **Data Validation** | [Pydantic](https://docs.pydantic.dev/) | v2 | High-throughput schema validation and serialization |
+| **Database** | [PostgreSQL](https://www.postgresql.org/) | 16 (Alpine) | Primary relational storage |
+| **Vector Engine** | [pgvector](https://github.com/pgvector/pgvector) | 0.7+ | Dense vector embeddings for semantic RAG search |
+| **Cache & Message Bus**| [Redis](https://redis.io/) | 7 (Alpine) | Session caching and async task queues |
+| **AI LLM Orchestrator**| [Google Gemini](https://ai.google.dev/) / [Ollama](https://ollama.ai/) | Dual-Engine | Cloud (Gemini 2.0) and local on-premise inference |
 
 ---
 
-## 🚀 Quick Start
+## 📂 Repository Structure
 
-### Prerequisites
-- [Docker](https://docs.docker.com/get-docker/) & [Docker Compose](https://docs.docker.com/compose/) installed.
+```
+├── .env.example                     # Environment template with sane defaults
+├── docker-compose.yml               # Multi-container orchestration specification
+├── backend/
+│   ├── Dockerfile                   # Python 3.11 container specification
+│   ├── requirements.txt             # Locked Python production dependencies
+│   └── app/
+│       ├── main.py                  # FastAPI bootstrap, CORS, and global error handling
+│       ├── core/
+│       │   ├── config.py            # Pydantic BaseSettings loading from .env
+│       │   ├── database.py          # Async SQLAlchemy engine & session factory
+│       │   └── security.py          # Password hashing (bcrypt) & JWT issuance
+│       ├── models/                  # SQLAlchemy ORM database models
+│       │   ├── user.py              # Dynamic User & Role relationships
+│       │   ├── employee.py          # Employee, Department, and Designation records
+│       │   ├── attendance.py        # Shift, Roster, and AttendanceRecord models
+│       │   ├── leave.py             # LeaveRequest, LeaveBalance, and LeavePolicy
+│       │   ├── organization.py      # CompanyProfile and Team models
+│       │   └── asset.py             # Corporate hardware & asset lifecycle models
+│       ├── schemas/
+│       │   └── hrms.py              # Pydantic request & response serializers
+│       ├── api/
+│       │   ├── deps.py              # Auth & RBAC dependency injection guards
+│       │   └── v1/                  # REST API endpoints (shifts, leaves, roles, etc.)
+│       └── agents/
+│           ├── llm_factory.py       # Dual provider (Gemini / Ollama) abstractions
+│           └── orchestrator.py      # RAG retriever & autonomous tool executor
+├── frontend/
+│   ├── Dockerfile                   # Next.js node:20 container specification
+│   ├── package.json                 # Node dependencies
+│   ├── tailwind.config.ts           # Skeuomorphic styling tokens & theme extensions
+│   └── src/
+│       ├── app/                     # Next.js 15 App Router pages
+│       │   ├── layout.tsx           # Root layout with Provider tree
+│       │   ├── globals.css          # Skeuomorphic CSS variables and classes
+│       │   ├── organization/        # Structure, Hierarchy, Shifts & Rosters
+│       │   ├── leaves/              # Leave applications, balances & calendar
+│       │   ├── attendance/          # Daily timesheets, clock-in & check-out
+│       │   └── employees/           # Enterprise directory & management
+│       ├── components/              # Reusable UI widgets & dashboards
+│       │   ├── Navbar.tsx           # Global header with theme, collapse & user menu
+│       │   ├── Sidebar.tsx          # Responsive, collapsible command navigation
+│       │   ├── dashboards/          # 6 role-specific customized dashboards
+│       │   └── notifications/       # Tactile notification dropdown & toast alerts
+│       └── context/                 # React Context stores
+│           ├── AuthContext.tsx      # User state, JWT storage & permission helpers
+│           ├── SidebarContext.tsx   # Global persistent sidebar collapse state
+│           ├── ThemeContext.tsx     # Light/Dark mode state with DOM syncing
+│           └── NotificationContext.tsx # Unread alerts and polling system
+└── docker/
+    └── postgres/
+        └── init-pgvector.sql        # Database initialization with vector extensions
+```
 
-### 1. Clone & Configure
+---
+
+## 🚀 Quick Start Guide
+
+### 1. Prerequisites
+- [Docker Engine](https://docs.docker.com/engine/install/) (v24.0+)
+- [Docker Compose](https://docs.docker.com/compose/install/) (v2.20+)
+
+### 2. Environment Configuration
+Clone the repository and copy the example environment configuration:
 ```bash
 git clone https://github.com/yashajaykadav/Human-Resource-Management-System.git
 cd Human-Resource-Management-System
 
-# Create your environment file from the example
 cp .env.example .env
 ```
 
-### 2. Launch Stack with Docker Compose
+Review `.env` to customize ports or credentials if needed:
+- `FRONTEND_PORT=3001` (Frontend app)
+- `BACKEND_PORT=8001` (FastAPI backend)
+- `POSTGRES_EXTERNAL_PORT=5433` (Postgres host mapping)
+- `REDIS_EXTERNAL_PORT=6380` (Redis host mapping)
+- `GEMINI_API_KEY` (Optional: provide your key for cloud AI copilot)
+
+### 3. Spin Up the Stack
+Launch all services in isolated containers:
 ```bash
 docker compose up --build -d
 ```
 
-### 3. Verify Services
-Check running containers:
+Verify service status:
 ```bash
 docker compose ps
 ```
-- **Frontend App**: [http://localhost:3001](http://localhost:3001)
-- **Backend API Docs**: [http://localhost:8001/api/v1/docs](http://localhost:8001/api/v1/docs)
-- **Health Check**: [http://localhost:8001/health](http://localhost:8001/health)
+
+Once running:
+- **Application Portal**: [http://localhost:3001](http://localhost:3001)
+- **Interactive Swagger Docs**: [http://localhost:8001/api/v1/docs](http://localhost:8001/api/v1/docs)
+- **ReDoc Documentation**: [http://localhost:8001/api/v1/redoc](http://localhost:8001/api/v1/redoc)
+- **Backend Health Check**: [http://localhost:8001/health](http://localhost:8001/health)
 
 ---
 
-## 👥 Demo Accounts
+## 👥 Seeded Authentication Matrix
 
-| Role | Email | Password | Primary Module |
+The initial database seed provisions active accounts across every operational role for seamless testing:
+
+| Role | Email | Password | Access Rights |
 | :--- | :--- | :--- | :--- |
-| **Super Admin** | `admin@apryde.com` | `admin123` | Full System & AI Control |
-| **HR Admin** | `hr@apryde.com` | `hr123` | Workforce, Leaves & ATS |
-| **Team Manager** | `manager@apryde.com` | `manager123` | Team Rosters & Approvals |
-| **Employee (ESS)** | `employee@apryde.com`| `emp123` | Self-Service & Check-in |
-| **Recruiter** | `recruiter@apryde.com`| `recruiter123` | ATS & Job Pipeline |
-| **Payroll Specialist**| `payroll@apryde.com` | `payroll123` | Compensation & Payslips |
+| **Super Admin** | `admin@apryde.com` | `admin123` | Full system access (`*`), DB settings & AI provider config |
+| **HR Admin** | `hr@apryde.com` | `hr123` | Employee records, leave final approvals, ATS, policy vault |
+| **Team Manager**| `manager@apryde.com` | `manager123` | Direct report rosters, timesheets, stage-1 leave approvals |
+| **Employee (ESS)** | `employee@apryde.com` | `emp123` | Self profile, daily check-in, personal balance & leave apply |
+| **Recruiter** | `recruiter@apryde.com` | `recruiter123` | Job requisitions, ATS applicant pipeline, resume scoring |
+| **Payroll Specialist** | `payroll@apryde.com` | `payroll123` | Salary structures, payslip runs, tax withholdings |
 
 ---
 
-## ⚙️ Environment Variables
+## 🧪 Testing & Verification
 
-Key parameters in `.env`:
-
-```env
-# Application Ports
-FRONTEND_PORT=3001
-BACKEND_PORT=8001
-NEXT_PUBLIC_API_URL=http://localhost:8001
-
-# PostgreSQL + pgvector
-POSTGRES_USER=hrms_user
-POSTGRES_PASSWORD=hrms_secure_password
-POSTGRES_DB=hrms_db
-DATABASE_URL=postgresql+asyncpg://hrms_user:hrms_secure_password@postgres:5432/hrms_db
-
-# AI Provider (gemini or ollama)
-DEFAULT_LLM_PROVIDER=gemini
-GEMINI_API_KEY="your-google-gemini-api-key"
-GEMINI_MODEL="gemini-2.0-flash"
-
-# Optional Local Ollama
-OLLAMA_BASE_URL=http://ollama:11434
-OLLAMA_MODEL=llama3.2:1b
-```
-
----
-
-## 🧪 Testing
-
-Run automated tests inside the backend container:
+Execute the backend automated test suite:
 ```bash
 docker compose exec backend pytest -v
 ```
 
+To run individual module tests:
+```bash
+docker compose exec backend pytest tests/test_hrms_core.py -v
+docker compose exec backend pytest tests/test_agent_rbac.py -v
+```
+
+---
+
+## 🤝 Contributing
+
+Contributions, issues, and feature proposals are welcome!
+1. Fork the Project
+2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your Changes (`git commit -m 'feat: Add some AmazingFeature'`)
+4. Push to the Branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
 ---
 
 ## 📄 License
-This project is licensed under the [MIT License](LICENSE).
+Distributed under the **MIT License**. See [`LICENSE`](LICENSE) for more information.
+
+<div align="center">
+  <sub>Engineered with precision by <strong>Yash Ajay Kadav</strong>. Built for enterprise reliability.</sub>
+</div>
